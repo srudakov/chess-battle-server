@@ -5,7 +5,7 @@ import logging
 import sys
 
 from chess import WINNER_KEY, REASON_KEY, FROM_KEY, TO_KEY
-from chess import Color, get_all_colors, get_color, get_color_to_move, start, check_move
+from chess import Color, get_all_colors, get_color, get_color_to_move, start, make_move
 
 NAME_KEY = "name"
 SECS_PER_TURN_KEY = "seconds_per_turn"
@@ -54,13 +54,14 @@ async def start_game(message, client_name):
     global secs_per_turn
     secs_per_turn = message.get(SECS_PER_TURN_KEY, 2.0)
     for color in get_all_colors():
-        player_name = message.get(color.to_str(), None)
+        player_name = message.get(color.key_name, None)
         if player_name is None or player_name not in clients:
             logger.warning("can not start game, request: {}".format(message))
             return
         players[color] = player_name
+    start()
     for color in players:
-        out_message = {"color": color.to_str(), SECS_PER_TURN_KEY: secs_per_turn}
+        out_message = {"color": color.key_name, SECS_PER_TURN_KEY: secs_per_turn}
         await clients[players[color]].send(json.dumps(out_message)) # TODO timer
 
 def get_player_color(player_name):
@@ -86,10 +87,10 @@ async def handle_move(message, client_name):
         logger.warning("move from {}, but no game available".format(client_name))
         return
     if color != get_color_to_move():
-        logger.warning("received move from {}, but its time for {}".format(color.to_str(), get_color_to_move().to_str()))
+        logger.warning("received move from {}, but its time for {}".format(color.key_name, get_color_to_move().key_name))
         return
     await send_to_all(message, client_name) # TODO timer
-    result = check_move(message)
+    result = make_move(message)
     if result is not None and WINNER_KEY in result:
       await send_to_all(result, None)
 
