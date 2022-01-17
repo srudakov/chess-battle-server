@@ -97,35 +97,48 @@ REASON_KEY = "reason"
 FROM_KEY = "from"
 TO_KEY = "to"
 
-def parse_move(move_str):
-    found_column_key = re.search(r'[A-Z]', move_str.upper())
+def parse_cell(cell_str):
+    found_column_key = re.search(r'[A-Z]', cell_str.upper())
     if found_column_key is None:
-        return "no column in {}".format(move_str)
+        return "no column in {}".format(cell_str)
     column_key = found_column_key.group(0)
     column = None
     for col in Column:
         if col.code_name == column_key:
             column = col
     if column is None:
-        return "no column in {}".format(move_str)
-    found_row = re.search(r'\d', move_str)
+        return "no column in {}".format(cell_str)
+    found_row = re.search(r'\d', cell_str)
     if found_row is None:
-        return "no row in {}".format(move_str)
+        return "no row in {}".format(cell_str)
     try:
         row = int(found_row.group(0))
         if (row < 0) or (row > MAX_ROW):
-            return "incorrect row: ".format(move_str)
+            return "incorrect row: ".format(cell_str)
         return {CellKey.ROW: row, CellKey.COLUMN: column}
     except:
-        return "no row in {}".format(move_str)
+        return "no row in {}".format(cell_str)
+
+def parse_move(move):
+    from_cell = parse_move(move[FROM_KEY])
+    to_cell = parse_move(move[TO_KEY])
+    if isinstance(from_cell, str):
+        return from_cell
+    if isinstance(to_cell, str):
+        return to_cell
+    return {FROM_KEY: from_cell, TO_KEY: to_cell}
+    
 
 def check_move(move):
+    if isinstance(move, str):
+        return move
     return None
 
 def make_move(move):
-    result = check_move(move)
+    parsed_move = parse_move(move)
+    result = check_move(parsed_move)
     if result is None:
         global COLOR_TO_MOVE, LAST_MOVE
-        LAST_MOVE = move
+        LAST_MOVE = parsed_move
         COLOR_TO_MOVE = COLOR_TO_MOVE.next_to_move()
     return result
