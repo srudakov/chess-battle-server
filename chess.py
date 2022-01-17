@@ -1,5 +1,6 @@
 from enum import Enum, IntEnum
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 MAX_ROW = 7
@@ -50,9 +51,14 @@ class PieceProperty(Enum):
     COLOR = 1
     MOVED = 2
 
-#Cell = tuple(int, Column)
+class CellKey(Enum):
+    ROW = 0
+    COLUMN = 1
+
+#Cell = {CellKey: row/column}
 #Piece = {PieceProperty: property_value}
 #Board = {Cell: Piece}
+#Move = tuple(Cell, Cell)
 
 def get_all_colors():
     return (Color.WHITE, Color.BLACK)
@@ -90,6 +96,28 @@ WINNER_KEY = "winner"
 REASON_KEY = "reason"
 FROM_KEY = "from"
 TO_KEY = "to"
+
+def parse_move(move_str):
+    found_column_key = re.search(r'[A-Z]', move_str.upper())
+    if found_column_key is None:
+        return "no column in {}".format(move_str)
+    column_key = found_column_key.group(0)
+    column = None
+    for col in Column:
+        if col.code_name == column_key:
+            column = col
+    if column is None:
+        return "no column in {}".format(move_str)
+    found_row = re.search(r'\d', move_str)
+    if found_row is None:
+        return "no row in {}".format(move_str)
+    try:
+        row = int(found_row.group(0))
+        if (row < 0) or (row > MAX_ROW):
+            return "incorrect row: ".format(move_str)
+        return {CellKey.ROW: row, CellKey.COLUMN: column}
+    except:
+        return "no row in {}".format(move_str)
 
 def check_move(move):
     return None
