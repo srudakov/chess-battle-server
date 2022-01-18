@@ -5,7 +5,7 @@ import logging
 import sys
 
 from game import WINNER_KEY, REASON_KEY, FROM_KEY, TO_KEY
-from game import Color, get_all_colors, get_color, get_color_to_move, start, make_move
+from game import Color, get_all_colors, get_color_to_move, start, make_move
 
 NAME_KEY = "name"
 SECS_PER_TURN_KEY = "seconds_per_turn"
