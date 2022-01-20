@@ -4,7 +4,8 @@ import re
 import chess
 
 logger = logging.getLogger(__name__)
-MAX_ROW = 7
+MIN_ROW = 1
+MAX_ROW = 8
 BOARD = None
 
 class Color(Enum):
@@ -48,7 +49,7 @@ def parse_cell(cell_str):
         return None
     try:
         row = int(found_row.group(0))
-        if (row < 0) or (row > MAX_ROW):
+        if (row < MIN_ROW) or (row > MAX_ROW):
             logger.error("incorrect row: ".format(cell_str))
             return None
         return column + found_row.group(0)
@@ -61,7 +62,10 @@ def parse_move(move):
     to_cell = parse_cell(move[TO_KEY])
     if from_cell is None or to_cell is None:
         return None
-    return from_cell + to_cell
+    trans = move.get("transform", "").lower()
+    trans_postfix = "" if len(trans) == 0 else trans[0]
+    trans_postfix = "n" if trans_postfix == "k" else trans_postfix
+    return from_cell + to_cell + trans_postfix
     
 
 def check_move(move):
@@ -84,6 +88,7 @@ def make_move(move):
     if parsed_move is None:
         return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move format"}
     if not check_move(parsed_move):
+        logger.debug("incorrect move: {}".format(parsed_move))
         return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move"}
     BOARD.push_san(parsed_move)
     result = BOARD.outcome()
