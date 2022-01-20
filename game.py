@@ -28,8 +28,11 @@ def start():
 def choose_color(is_white):
     return Color.WHITE if is_white else Color.BLACK
 
+def game_exists():
+    return BOARD is not None and BOARD.outcome() is None
+
 def get_color_to_move():
-    return None if BOARD is None else choose_color(BOARD.turn)
+    return choose_color(BOARD.turn) if game_exists() else None
 
 WINNER_KEY = "winner"
 REASON_KEY = "reason"
