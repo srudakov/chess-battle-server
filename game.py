@@ -6,7 +6,12 @@ import chess
 logger = logging.getLogger(__name__)
 MIN_ROW = 1
 MAX_ROW = 8
-BOARD = None
+BOARD: chess.Board = None
+
+WINNER_KEY = "winner"
+REASON_KEY = "reason"
+FROM_KEY = "from"
+TO_KEY = "to"
 
 class Color(Enum):
     WHITE = 1, 'white'
@@ -34,10 +39,6 @@ def game_exists():
 def get_color_to_move():
     return choose_color(BOARD.turn) if game_exists() else None
 
-WINNER_KEY = "winner"
-REASON_KEY = "reason"
-FROM_KEY = "from"
-TO_KEY = "to"
 
 def parse_cell(cell_str):
     found_column_key = re.search(r'[a-h]', cell_str.lower())
@@ -74,6 +75,7 @@ def parse_move(move):
 def check_move(move):
     return chess.Move.from_uci(move) in BOARD.legal_moves
 
+
 def get_finish_reason(reason):
     if reason == chess.Termination.CHECKMATE:
         return "мат"
@@ -83,7 +85,8 @@ def get_finish_reason(reason):
         return "недостаток материала"
     if reason == chess.Termination.FIVEFOLD_REPETITION or reason == chess.Termination.THREEFOLD_REPETITION:
         return "повторение"
-    return ""
+    return reason
+
 
 def make_move(move):
     color = get_color_to_move()

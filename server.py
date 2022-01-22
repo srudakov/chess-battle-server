@@ -92,16 +92,21 @@ async def handle_move(message, client_name):
     await send_to_all(message, client_name) # TODO timer
     result = make_move(message)
     if result is not None and WINNER_KEY in result:
-      await send_to_all(result, None)
+        await send_to_all(result, None)
 
 
 async def receive_parsed_json(message, websocket):
     if NAME_KEY in message:
         await handle_registration(message[NAME_KEY], websocket)
+        return
+    # TODO make SECS_PER_TURN_KEY not mandatory field
     if SECS_PER_TURN_KEY in message:
         await start_game(message, get_name(websocket))
+        return
     if FROM_KEY in message and TO_KEY in message:
         await handle_move(message, get_name(websocket))
+        return
+
 
 async def handle_new_client(websocket, path):
     logger.info("A client connected {}".format(websocket.remote_address[0]))
@@ -117,7 +122,7 @@ async def handle_new_client(websocket, path):
         remove_client(websocket)
 
 
-port = 6969 if len(sys.argv) < 2 else sys.argv[1]
+port = 6969 if len(sys.argv) < 2 else int(sys.argv[1])
 logger.info("Running on port {}".format(port))
 
 start_server = websockets.serve(handle_new_client, "localhost", port)

@@ -18,8 +18,8 @@ async def listen():
             print(msg)
 
 opt_parser = OptionParser()
-opt_parser.add_option("-a", "--address", dest="address", action="store")
-opt_parser.add_option("-p", "--port", dest="port", action="store")
+opt_parser.add_option("-a", "--address", dest="address", action="store", default="localhost")
+opt_parser.add_option("-p", "--port", dest="port", action="store", default="6969")
 opt_parser.add_option("-T", "--text", dest="text", action="store")
 opt_parser.add_option("-F", "--file", dest="file", action="store")
 opt_parser.add_option("-n", "--name", dest="name", action="store")
