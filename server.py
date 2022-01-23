@@ -4,7 +4,7 @@ import json
 import logging
 import sys
 
-from game import WINNER_KEY, REASON_KEY, FROM_KEY, TO_KEY
+from game import MESSAGE_KEY, WINNER_KEY, REASON_KEY, FROM_KEY, TO_KEY
 from game import Color, get_all_colors, get_color_to_move, start, make_move
 
 NAME_KEY = "name"
@@ -45,7 +45,7 @@ async def handle_registration(name, websocket):
     else:
         clients[name] = websocket
         if VIEWER_NAME in clients:
-            await clients[VIEWER_NAME].send(json.dumps({"names": get_client_names()}))
+            await clients[VIEWER_NAME].send(json.dumps({"names": get_client_names(), MESSAGE_KEY: "players"}))
 
 async def start_game(message, client_name):
     if client_name != VIEWER_NAME:
@@ -61,7 +61,7 @@ async def start_game(message, client_name):
         players[color] = player_name
     start()
     for color in players:
-        out_message = {"color": color.key_name, SECS_PER_TURN_KEY: secs_per_turn}
+        out_message = {"color": color.key_name, SECS_PER_TURN_KEY: secs_per_turn, MESSAGE_KEY: "start_game"}
         await clients[players[color]].send(json.dumps(out_message)) # TODO timer
 
 def get_player_color(player_name):
@@ -96,14 +96,13 @@ async def handle_move(message, client_name):
 
 
 async def receive_parsed_json(message, websocket):
-    if NAME_KEY in message:
+    if message.get(MESSAGE_KEY, "") == "registration" and NAME_KEY in message:
         await handle_registration(message[NAME_KEY], websocket)
         return
-    # TODO make SECS_PER_TURN_KEY not mandatory field
-    if SECS_PER_TURN_KEY in message:
+    if message.get(MESSAGE_KEY, "") == "start_game":
         await start_game(message, get_name(websocket))
         return
-    if FROM_KEY in message and TO_KEY in message:
+    if message.get(MESSAGE_KEY, "") == "move" and FROM_KEY in message and TO_KEY in message:
         await handle_move(message, get_name(websocket))
         return
 

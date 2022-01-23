@@ -43,16 +43,18 @@ opt_parser.add_option("-s", "--seconds_per_turn", dest="seconds_per_turn", actio
 options, args = opt_parser.parse_args()
 
 URL = "ws://{}:{}".format(options.address, options.port)
+MESSAGE_KEY = "message"
 if check(options.name):
-    TEXTS_TO_SEND.append(json.dumps({"name": str(options.name)}))
+    TEXTS_TO_SEND.append(json.dumps({"name": str(options.name), MESSAGE_KEY: "registration"}))
 if check(options.move_from) and check(options.move_to):
-    move = {"from": str(options.move_from), "to": str(options.move_to)}
+    move = {"from": str(options.move_from), "to": str(options.move_to), MESSAGE_KEY: "move"}
     if check(options.transform):
         move["transform"] = str(options.transform)
     TEXTS_TO_SEND.append(json.dumps(move))
 if check(options.white) and check(options.black):
     seconds_per_turn = str(options.seconds_per_turn) if check(options.seconds_per_turn) else "2"
-    TEXTS_TO_SEND.append(json.dumps({"white": str(options.white), "black": str(options.black), "seconds_per_turn": seconds_per_turn}))
+    start_game = {"white": str(options.white), "black": str(options.black), "seconds_per_turn": seconds_per_turn, MESSAGE_KEY: "start_game"}
+    TEXTS_TO_SEND.append(json.dumps(start_game))
 if check(options.text):
     TEXTS_TO_SEND.append(options.text)
 if check(options.file):

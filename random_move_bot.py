@@ -18,7 +18,7 @@ def get_peice(piece_type):
     return piece_map.get(piece_type, None)
 
 def trans_move(move_from_lib):
-    move = {"from": chess.square_name(move_from_lib.from_square).upper(), "to": chess.square_name(move_from_lib.to_square).upper()}
+    move = {"from": chess.square_name(move_from_lib.from_square).upper(), "to": chess.square_name(move_from_lib.to_square).upper(), game.MESSAGE_KEY: "move"}
     if move_from_lib.promotion is not None:
         piece = get_peice(move_from_lib.promotion)
         if piece is not None:
@@ -40,25 +40,28 @@ def parse_json(message):
     except:
         return None
 
+def check_type(message, command_type):
+    return message.get(game.MESSAGE_KEY, None) == command_type
+
 async def receive(message_str, ws):
     print(message_str)
     message = parse_json(message_str)
     if message is None:
         return
-    if "winner" in message:
+    if check_type(message, "end_game"):
         print("winner/reason: {}/{}".format(message.get("winner", ""), message.get("reason", "")))
-    if "color" in message:
+    if check_type(message, "start_game"):
         global COLOR
         COLOR = game.Color.WHITE if message["color"].lower() == "white" else game.Color.BLACK
         game.start()
         await make_move(ws)
-    if "from" in message and game.BOARD is not None:
+    if check_type(message, "move") and game.BOARD is not None:
         game.make_move(message)
         await make_move(ws)
 
 async def listen():
     async with websockets.connect(URL) as ws:
-        await ws.send(json.dumps({"name": NAME}))
+        await ws.send(json.dumps({"name": NAME, game.MESSAGE_KEY: "registration"}))
         while True:
             msg = await ws.recv()
             await receive(msg, ws)

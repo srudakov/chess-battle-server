@@ -8,6 +8,7 @@ MIN_ROW = 1
 MAX_ROW = 8
 BOARD: chess.Board = None
 
+MESSAGE_KEY = "message"
 WINNER_KEY = "winner"
 REASON_KEY = "reason"
 FROM_KEY = "from"
@@ -102,4 +103,4 @@ def make_move(move):
         return None
     winner_color = "draw" if result.winner is None else choose_color(result.winner).key_name
     reason = get_finish_reason(result.termination)
-    return {WINNER_KEY: winner_color, REASON_KEY: reason}
+    return {WINNER_KEY: winner_color, REASON_KEY: reason, MESSAGE_KEY: "end_game"}
