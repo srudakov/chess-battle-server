@@ -64,9 +64,9 @@ async def listen():
             await receive(msg, ws)
 
 opt_parser = OptionParser()
-opt_parser.add_option("-a", "--address", dest="address", action="store")
-opt_parser.add_option("-p", "--port", dest="port", action="store")
-opt_parser.add_option("-n", "--name", dest="name", action="store")
+opt_parser.add_option("-a", "--address", dest="address", action="store", default="localhost", help="server address to connect to")
+opt_parser.add_option("-p", "--port", dest="port", action="store", default="6969", help="server port to connect to")
+opt_parser.add_option("-n", "--name", dest="name", action="store", help="self name to register on server")
 options, args = opt_parser.parse_args()
 
 URL = "ws://{}:{}".format(options.address, options.port)

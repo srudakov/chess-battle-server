@@ -38,6 +38,3 @@
   "winner": "Pedro's machine"
   "reason": "Мат/Невозможный ход/Просрочка времени/..."
 }
-
-
-# TODO как запускать test_client
