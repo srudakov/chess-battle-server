@@ -9,6 +9,7 @@ from optparse import OptionParser
 URL = ""
 NAME = "random moves"
 COLOR = None
+GAME_DATA = None
 
 def check(text):
     return text is not None and len(str(text)) > 0
@@ -26,12 +27,12 @@ def trans_move(move_from_lib):
     return move
 
 async def make_move(ws):
-    if COLOR != game.get_color_to_move() or game.BOARD is None:
+    if GAME_DATA is None or COLOR != GAME_DATA.get_color_to_move():
         return
-    moves = [move for move in game.BOARD.legal_moves]
+    moves = [move for move in GAME_DATA.board.legal_moves]
     index = random.randrange(len(moves))
     move = trans_move(moves[index])
-    game.make_move(move)
+    GAME_DATA.make_move(move)
     await ws.send(json.dumps(move))
 
 def parse_json(message):
@@ -46,17 +47,19 @@ def check_type(message, command_type):
 async def receive(message_str, ws):
     print(message_str)
     message = parse_json(message_str)
+    global GAME_DATA
     if message is None:
         return
     if check_type(message, "end_game"):
         print("winner/reason: {}/{}".format(message.get("winner", ""), message.get("reason", "")))
+        print(GAME_DATA.board)
     if check_type(message, "start_game"):
         global COLOR
         COLOR = game.Color.WHITE if message["color"].lower() == "white" else game.Color.BLACK
-        game.start()
+        GAME_DATA = game.Game()
         await make_move(ws)
-    if check_type(message, "move") and game.BOARD is not None:
-        game.make_move(message)
+    if check_type(message, "move") and GAME_DATA.board is not None:
+        GAME_DATA.make_move(message)
         await make_move(ws)
 
 async def listen():

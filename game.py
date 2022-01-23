@@ -6,7 +6,6 @@ import chess
 logger = logging.getLogger(__name__)
 MIN_ROW = 1
 MAX_ROW = 8
-BOARD: chess.Board = None
 
 MESSAGE_KEY = "message"
 WINNER_KEY = "winner"
@@ -26,20 +25,8 @@ class Color(Enum):
 def get_all_colors():
     return (Color.WHITE, Color.BLACK)
 
-def start():
-    logger.debug("new game requested")
-    global BOARD
-    BOARD = chess.Board()
-
 def choose_color(is_white):
     return Color.WHITE if is_white else Color.BLACK
-
-def game_exists():
-    return BOARD is not None and BOARD.outcome() is None
-
-def get_color_to_move():
-    return choose_color(BOARD.turn) if game_exists() else None
-
 
 def parse_cell(cell_str):
     found_column_key = re.search(r'[a-h]', cell_str.lower())
@@ -71,11 +58,6 @@ def parse_move(move):
     trans_postfix = "" if len(trans) == 0 else trans[0]
     trans_postfix = "n" if trans_postfix == "k" else trans_postfix
     return from_cell + to_cell + trans_postfix
-    
-
-def check_move(move):
-    return chess.Move.from_uci(move) in BOARD.legal_moves
-
 
 def get_finish_reason(reason):
     if reason == chess.Termination.CHECKMATE:
@@ -86,21 +68,37 @@ def get_finish_reason(reason):
         return "недостаток материала"
     if reason == chess.Termination.FIVEFOLD_REPETITION or reason == chess.Termination.THREEFOLD_REPETITION:
         return "повторение"
-    return reason
+    if reason == chess.Termination.FIVEFOLD_REPETITION or reason == chess.Termination.SEVENTYFIVE_MOVES:
+        return "75 ходов"
+    return str(reason)
 
+class Game:
+    def __init__(self):
+        logger.debug("new game")
+        self.board = chess.Board()
+        self.board.fullmove_number = 10
 
-def make_move(move):
-    color = get_color_to_move()
-    parsed_move = parse_move(move)
-    if parsed_move is None:
-        return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move format"}
-    if not check_move(parsed_move):
-        logger.debug("incorrect move: {}".format(parsed_move))
-        return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move"}
-    BOARD.push_san(parsed_move)
-    result = BOARD.outcome()
-    if result is None:
-        return None
-    winner_color = "draw" if result.winner is None else choose_color(result.winner).key_name
-    reason = get_finish_reason(result.termination)
-    return {WINNER_KEY: winner_color, REASON_KEY: reason, MESSAGE_KEY: "end_game"}
+    def game_exists(self):
+        return self.board is not None and self.board.outcome() is None
+
+    def get_color_to_move(self):
+        return choose_color(self.board.turn) if self.game_exists() else None
+
+    def check_move(self, move):
+        return chess.Move.from_uci(move) in self.board.legal_moves
+
+    def make_move(self, move):
+        color = self.get_color_to_move()
+        parsed_move = parse_move(move)
+        if parsed_move is None:
+            return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move format"}
+        if not self.check_move(parsed_move):
+            logger.debug("incorrect move: {}".format(parsed_move))
+            return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move"}
+        self.board.push_san(parsed_move)
+        result = self.board.outcome()
+        if result is None:
+            return None
+        winner_color = "draw" if result.winner is None else choose_color(result.winner).key_name
+        reason = get_finish_reason(result.termination)
+        return {WINNER_KEY: winner_color, REASON_KEY: reason, MESSAGE_KEY: "end_game"}

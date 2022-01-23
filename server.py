@@ -5,10 +5,11 @@ import logging
 import sys
 
 from game import MESSAGE_KEY, WINNER_KEY, REASON_KEY, FROM_KEY, TO_KEY
-from game import Color, get_all_colors, get_color_to_move, start, make_move
+from game import Game, Color, get_all_colors
 
 NAME_KEY = "name"
 SECS_PER_TURN_KEY = "seconds_per_turn"
+GAME_KEY = "game"
 VIEWER_NAME = "viewer"
 
 logger = logging.getLogger(__name__)
@@ -17,8 +18,7 @@ logging.basicConfig(level=logging.INFO,
                     handlers=[logging.StreamHandler()])
 
 clients = {}
-players = {}
-secs_per_turn = 2.0
+games = []
 
 def get_name(websocket):
     for name in clients:
@@ -47,52 +47,89 @@ async def handle_registration(name, websocket):
         if VIEWER_NAME in clients:
             await clients[VIEWER_NAME].send(json.dumps({"names": get_client_names(), MESSAGE_KEY: "players"}))
 
+def find_game(name):
+    for game_data in games:
+        for color in get_all_colors():
+            if game_data.get(color, "") == name:
+                return game_data
+    return None
+
+def make_float(number, default):
+    if isinstance(number, float):
+        return number
+    try:
+        return float(number)
+    except:
+        return default
+
 async def start_game(message, client_name):
     if client_name != VIEWER_NAME:
         logger.warning("new game requested not from viewer!")
         return
-    global secs_per_turn
     secs_per_turn = message.get(SECS_PER_TURN_KEY, 2.0)
+    new_game = {SECS_PER_TURN_KEY: make_float(secs_per_turn, 2.0)}
     for color in get_all_colors():
         player_name = message.get(color.key_name, None)
         if player_name is None or player_name not in clients:
             logger.warning("can not start game, request: {}".format(message))
             return
-        players[color] = player_name
-    start()
-    for color in players:
+        game_data = find_game(player_name)
+        if game_data is not None:
+            logger.warning("can not start game: {} already in game".format(player_name))
+            return
+        new_game[color] = player_name
+    new_game[GAME_KEY] = Game()
+    games.append(new_game)
+    for color in get_all_colors():
         out_message = {"color": color.key_name, SECS_PER_TURN_KEY: secs_per_turn, MESSAGE_KEY: "start_game"}
-        await clients[players[color]].send(json.dumps(out_message)) # TODO timer
+        await clients[new_game[color]].send(json.dumps(out_message)) # TODO timer
 
 def get_player_color(player_name):
-    for color in players:
-        if players[color] == player_name:
+    game_data = find_game(player_name)
+    if game_data is None:
+        return None
+    for color in get_all_colors():
+        if game_data[color] == player_name:
             return color
     return None
 
-async def send_to_all(message, except_name):
-    for color in players:
-        name = players[color]
+async def send_to_all(game_data, message, except_name):
+    for color in get_all_colors():
+        name = game_data[color]
         if name != except_name and name in clients:
             await clients[name].send(json.dumps(message))
     if VIEWER_NAME != except_name and VIEWER_NAME in clients:
         await clients[VIEWER_NAME].send(json.dumps(message))
 
+def remove_game(game_to_remove):
+    for index in range(len(games)):
+        game_data = games[index]
+        remove = True
+        for color in get_all_colors():
+            if game_data[color] != game_to_remove[color]:
+                remove = False
+        if remove:
+            games.pop(index)
+            return
+
 async def handle_move(message, client_name):
     color = get_player_color(client_name)
-    if color is None:
+    game_data = find_game(client_name)
+    if color is None or game_data is None:
         logger.warning("move from spy: {}".format(client_name))
         return
-    if get_color_to_move() is None:
+    cur_game = game_data[GAME_KEY]
+    if cur_game.get_color_to_move() is None:
         logger.warning("move from {}, but no game available".format(client_name))
         return
-    if color != get_color_to_move():
-        logger.warning("received move from {}, but its time for {}".format(color.key_name, get_color_to_move().key_name))
+    if color != cur_game.get_color_to_move():
+        logger.warning("received move from {}, but its time for {}".format(color.key_name, cur_game.get_color_to_move().key_name))
         return
-    await send_to_all(message, client_name) # TODO timer
-    result = make_move(message)
+    await send_to_all(game_data, message, client_name) # TODO timer
+    result = cur_game.make_move(message)
     if result is not None and WINNER_KEY in result:
-        await send_to_all(result, None)
+        await send_to_all(game_data, result, None)
+        remove_game(game_data)
 
 
 async def receive_parsed_json(message, websocket):
@@ -113,8 +150,8 @@ async def handle_new_client(websocket, path):
         async for message in websocket:
             try:
                 await receive_parsed_json(json.loads(message), websocket)
-            except:
-                logger.error("error on message: {}".format(message))
+            except Exception as e:
+                logger.error("error on message: {}\n{}".format(message, e))
     except websockets.exceptions.ConnectionClosed as e:
         logger.info("A client disconnected {}".format(websocket.remote_address[0]))
     finally:
