@@ -1,15 +1,15 @@
 # chess-battle-server  
-python server for chess bot battles  
+python сервер для боёв шахматных ботов  
 
-using python chess module: https://python-chess.readthedocs.io/en/latest  
+использется модуль: https://python-chess.readthedocs.io/en/latest  
 
-We will write our own chess bots and see who's better.  
-Bots should be able to communicate with web socket server by json protocol described in this repo.  
-This repo is mainly web socket server with chess checks(python).  
-Plus here is simple python client for testing server and other clients. You can even play with some bot with that test client.  
-And here is bot that makes random moves.  
+Напишем своих шахматных ботов и поглядим кто круче.  
+Боты должны уметь общаться с сервером через веб сокет по протоколу описанному в этом репозитории(см protocol.txt).  
+Главное в этом репозитории - веб сокет сервер с проверками шахматной корректности на питоне .  
+Имеется так же тестовый клиент для проверки сервера и прочих клиентов. Этот клиент при должной сноровке можно использовать для игры своим мозгом и руками.  
+Ещё имеется бот, делающий случайные ходы.  
 
-Fedor will do browser visualization and match history storing with C#.  
+Фёдор налабает браузерную визулизацию и хранение истории матчей на C#.  
 
 Примерный алгоритм  
 1. запустить сервер (server.py) можно через консоль  
