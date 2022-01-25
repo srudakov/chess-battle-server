@@ -121,7 +121,7 @@ async def start_game(message, client_name):
         out_message = {"color": color.key_name, SECS_PER_TURN_KEY: secs_per_turn, MESSAGE_KEY: "start_game"}
         await clients[new_game[color]].send(json.dumps(out_message))
     if WITH_TIME_CHECKS:
-        new_game[TIMER_KEY] = Timer(secs_per_turn, partial(on_timeout, new_game))
+        new_game[TIMER_KEY] = Timer(new_game.get(SECS_PER_TURN_KEY, 2.0), partial(on_timeout, new_game))
 
 def get_player_color(player_name):
     game_data = find_game(player_name)
@@ -148,6 +148,9 @@ async def handle_move(message, client_name):
     await send_to_all(game_data, message, client_name)
     result = cur_game.make_move(message)
     if result is not None and WINNER_KEY in result:
+        winner_color = result[WINNER_KEY]
+        if isinstance(winner_color, Color):
+            result[WINNER_KEY] = game_data.get(winner_color, winner_color.key_name)
         await send_to_all(game_data, result, None)
         remove_game(game_data)
     else:

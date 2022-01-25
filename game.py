@@ -91,14 +91,14 @@ class Game:
         color = self.get_color_to_move()
         parsed_move = parse_move(move)
         if parsed_move is None:
-            return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move format"}
+            return {WINNER_KEY: color.next_to_move(), REASON_KEY: "incorrect move format"}
         if not self.check_move(parsed_move):
             logger.debug("incorrect move: {}".format(parsed_move))
-            return {WINNER_KEY: color.next_to_move().key_name, REASON_KEY: "incorrect move"}
+            return {WINNER_KEY: color.next_to_move(), REASON_KEY: "incorrect move"}
         self.board.push_san(parsed_move)
         result = self.board.outcome()
         if result is None:
             return None
-        winner_color = "draw" if result.winner is None else choose_color(result.winner).key_name
+        winner_color = "draw" if result.winner is None else choose_color(result.winner)
         reason = get_finish_reason(result.termination)
         return {WINNER_KEY: winner_color, REASON_KEY: reason, MESSAGE_KEY: "end_game"}
